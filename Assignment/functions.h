@@ -5,8 +5,7 @@ typedef struct box {
 	int right;
 
 	int isLowLight;
-	int currentSquare;
-	int wall;
+	int discovered;
 
 	struct box *frontSquare;
 	struct box *backSquare;
@@ -14,6 +13,14 @@ typedef struct box {
 	struct box *rightSquare;
 } square;
 
-square createSquare(int l, int r, int b, int f);
+square createSquare();
+
+void moveUntillOverLine();
 
 void movement();
+
+void allLEDOn();
+
+void allLEDOff();
+
+void discover(square *activeSquare);

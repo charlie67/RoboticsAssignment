@@ -1,0 +1,45 @@
+[Header]
+MagicCookie={0b13fe8c-dfe0-40eb-8900-6712719559a7}
+Version=1.0
+[File000]
+Location=M:\documents\2nd Year\CS26020\Assignment\program.o
+Folder=Intermediary
+DeviceName=dsPIC33EP256MU810
+LanguageToolSuiteID={9BCCB495-CD65-480A-BA76-63D8E78B117F}
+LanguageToolID={B1442D91-FF1F-4E60-9714-C39C1BA9DB62}
+LanguageToolLocation=C:\Program Files (x86)\Microchip\xc16\v1.33\bin\xc16-gcc.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|program.c||<obj>|allcode_api.o||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-g -Wall
+TraceCmdString=
+DebugOptions=-D__DEBUG
+[File001]
+Location=M:\documents\2nd Year\CS26020\Assignment\assignment.cof
+Folder=Output
+DeviceName=dsPIC33EP256MU810
+LanguageToolSuiteID={9BCCB495-CD65-480A-BA76-63D8E78B117F}
+LanguageToolID={6836D8CA-42BB-48FB-9E77-3F0AA8005073}
+LanguageToolLocation=C:\Program Files (x86)\Microchip\xc16\v1.33\bin\xc16-ld.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|program.c||<obj>|allcode_api.o||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)" -Map="$(BINDIR_)$(TARGETBASE).map" --report-mem
+TraceCmdString=
+DebugOptions=--defsym=__MPLAB_DEBUG=1
+[File002]
+Location=M:\documents\2nd Year\CS26020\Assignment\assignment.hex
+Folder=Output
+DeviceName=dsPIC33EP256MU810
+LanguageToolSuiteID={9BCCB495-CD65-480A-BA76-63D8E78B117F}
+LanguageToolID={6836D8CA-42BB-48FB-9E77-3F0AA8005073}
+LanguageToolLocation=C:\Program Files (x86)\Microchip\xc16\v1.33\bin\xc16-ld.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|program.c||<obj>|allcode_api.o||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)" -Map="$(BINDIR_)$(TARGETBASE).map" --report-mem
+TraceCmdString=
+DebugOptions=--defsym=__MPLAB_DEBUG=1
+[TOOL_LOC_STAMPS]
+tool_loc{B1442D91-FF1F-4E60-9714-C39C1BA9DB62}=C:\Program Files (x86)\Microchip\xc16\v1.33\bin\xc16-gcc.exe
+tool_loc{6836D8CA-42BB-48FB-9E77-3F0AA8005073}=C:\Program Files (x86)\Microchip\xc16\v1.33\bin\xc16-ld.exe

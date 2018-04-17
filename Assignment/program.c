@@ -35,13 +35,13 @@ static int NORTH_COMPASS_HEADING = 0;
 static int SOUTH_COMPASS_HEADING = 180;
 static int EAST_COMPASS_HEADING = 90;
 static int WEST_COMPASS_HEADING = 270;
+static int NULL_COMPASS_HEADING = -1;
+
+static int SQUARE_SEARCHED = 0;
+static int SQUARE_UNSEARCHED = 1;
 
 int compass;
 int squareId;
-
-unsigned char stackLocation;
-
-unsigned char compassStack[16];
 
 int main() {
 	FA_RobotInit();
@@ -72,179 +72,15 @@ int main() {
 	startSquare = createSquare();
 
 	discoverMaze();
-	celebrate();
+	// celebrate();
+
+
 
 	return 0;
 }
 
-void navigate(square*start, square*end, int directionFrom) {
-//go north until you either find what you want or reach a dead end
+int search() {
 
-	if (start->id == end->id) {
-		#ifdef NAVIGATIONS_OUTPUTS
-		FA_BTSendString("Already at the end square.\n", 40);
-		#endif
-
-		FA_LCDBacklight(100);
-		FA_LCDPrint("Found Square.", 16, 20, 25, FONT_NORMAL, LCD_OPAQUE);
-		return;
-	}
-
-	square *movement = start;
-	int wallCheck;
-
-	stackLocation = 0;
-
-	int westCheced;
-	int eastChecked;
-	int southChecked;
-	int northChecked;
-
-	if (numBlockedSides(movement) => 2) {//if you have 2 or more blocked routes
-		//search through the only unblocked way
-		if (movement->north != NULL && directionFrom != 180) wallCheck = 0;
-		else if (movement->east != NULL && directionFrom != 270) wallCheck = 1;
-		else if (movement->south != NULL && directionFrom != 0) wallCheck = 2;
-		else if (movement->west != NULL && directionFrom != 90) wallCheck = 3;
-
-		switch (wallCheck) {
-		case 0:
-			//go north and check that block
-			movement = movement->north;
-
-			compassStack[stackLocation] = NORTH_COMPASS_HEADING;
-
-			navigate(movement, end, NORTH_COMPASS_HEADING);
-			break;
-		case 1:
-			movement = movement->east;
-
-			compassStack[stackLocation] = EAST_COMPASS_HEADING;
-
-			navigate(movement, end, EAST_COMPASS_HEADING);
-			break;
-
-		case 2:
-			movement = movement->south;
-
-			compassStack[stackLocation] = SOUTH_COMPASS_HEADING;
-
-			navigate(movement, end, SOUTH_COMPASS_HEADING);
-			break;
-
-		case 3:
-			movement = movement->west;
-
-			compassStack[stackLocation] = WEST_COMPASS_HEADING;
-
-			navigate(movement, end, WEST_COMPASS_HEADING);
-			break;
-
-		}
-
-	} else {
-
-	}
-
-
-}
-
-int numBlockedSides(square *block) {
-	int blockedSides = 0;
-
-	if (block->north == NULL) blockedSides++;
-	if (block->south == NULL) blockedSides++;
-	if (block->east == NULL) blockedSides++;
-	if (block->west == NULL) blockedSides++;
-
-	return blockedSides;
-}
-
-/**
-returns 0 if there are no branches otherwise will return number of branches
-will go along all the squares to the north of this square and see if there are branches to the east or west
-**/
-unsigned char anyBranchesNorth(square *start) {
-	square *movement;
-
-	unsigned char branchNumber = 0;
-
-	while (start->north != NULL) {
-		movement = start->north;
-
-		if (movement->west != NULL) {
-			branchNumber++;
-		}
-
-		if (movement->east != NULL) {
-			branchNumber++;
-		}
-	}
-
-	return branchNumber;
-}
-
-unsigned char anyBranchesEast(square *start) {
-	// want to check north and south
-	square *movement;
-
-	unsigned char branchNumber = 0;
-
-	while (start->east != NULL) {
-		movement = start->east;
-
-		if (movement->north != NULL) {
-			branchNumber++;
-		}
-
-		if (movement->south != NULL) {
-			branchNumber++;
-		}
-	}
-
-	return branchNumber;
-
-}
-
-unsigned char anyBranchesWest(square *start) {
-	square *movement;
-
-	unsigned char branchNumber = 0;
-
-	while (start->west != NULL) {
-		movement = start->east;
-
-		if (movement->north != NULL) {
-			branchNumber++;
-		}
-
-		if (movement->south != NULL) {
-			branchNumber++;
-		}
-	}
-
-	return branchNumber;
-
-}
-
-unsigned char anyBranchesSouth(square *start) {
-	square *movement;
-
-	unsigned char branchNumber = 0;
-
-	while (start->north != NULL) {
-		movement = start->north;
-
-		if (movement->west != NULL) {
-			branchNumber++;
-		}
-
-		if (movement->east != NULL) {
-			branchNumber++;
-		}
-	}
-
-	return branchNumber;
 }
 
 void discoverMaze(void) {
@@ -269,6 +105,7 @@ void discoverMaze(void) {
 
 			allLEDOn();
 			FA_Right(180);
+			compass180();
 
 			break;
 		}
@@ -304,7 +141,7 @@ void discoverMaze(void) {
 			FA_BTSendString("Found dark square\n", 30);
 
 			allLEDOn();
-			FA_PlayNote(261, 100);
+			// FA_PlayNote(261, 100);
 			FA_LCDBacklight(100);
 
 			darkSquare = activeSquare;
@@ -348,75 +185,6 @@ void discoverMaze(void) {
 			compassRight();
 
 			moveUntillOverLine();
-		}
-	}
-}
-
-void moveAlongStack(void) {
-	if (stackLocation == 0) {
-		//already at the square so dont do anything
-		#ifdef SQUARE_EXPLORATION_OUTPUTS
-		FA_BTSendString("Done!\n", 20);
-		#endif
-
-		return;
-
-	} else {
-		int i;
-		for (i = 0; i <= stackLocation; i++) {
-			if (compassStack[i] == 0) {
-				//move to north and advance
-				if (compass != 0) {
-					unsigned char distanceFromCompass = compass % 360;
-					while (distanceFromCompass > 0) {
-						FA_Right(90);
-						distanceFromCompass - 90;
-					}
-				}
-
-				while (activeSquare->id != darkSquare->id) {
-					moveUntillOverLine();
-				}
-
-				allLEDOn();
-
-				while (1) {
-					FA_LCDBacklight(100);
-					FA_DelayMillis(300);
-					FA_LCDBacklight(0);
-				}
-
-			} else if (compassStack[i] == 90) {
-				//move to east and advance
-				if (compass != 90) {
-					unsigned char distanceFromCompass = compass % 360;
-					while (distanceFromCompass > 0) {
-						FA_Right(90);
-						distanceFromCompass - 90;
-					}
-				}
-
-			} else if (compassStack[i] == 180) {
-				//move to south and advance
-				if (compass != 180) {
-					unsigned char distanceFromCompass = compass % 360;
-					while (distanceFromCompass > 0) {
-						FA_Right(90);
-						distanceFromCompass - 90;
-					}
-				}
-
-			} else {
-				//move to the west and advance
-				if (compass != 270) {
-					unsigned char distanceFromCompass = compass % 360;
-					while (distanceFromCompass > 0) {
-						FA_Right(90);
-						distanceFromCompass - 90;
-					}
-				}
-
-			}
 		}
 	}
 }
@@ -749,7 +517,7 @@ square *createSquare(void) {
 
 	returnNode->id = squareId;
 
-	returnNode->searched = 0;
+	returnNode->searched = SQUARE_UNSEARCHED;
 
 	returnNode->north = NULL;
 	returnNode->east = NULL;
@@ -792,6 +560,9 @@ void celebrate(void) {
 	lightShow(10);
 	FA_Right(30);
 	FA_Left(30);
+	FA_Right(30);
+	FA_Left(30);
+	lightShow(10);
 	FA_Right(720);
 	FA_Left(720);
 }
@@ -851,4 +622,78 @@ void measureLight(void) {
 		FA_LCDNumber(lightValue, 0, 0, 0, 0);
 		FA_DelaySecs(1);
 	}
+}
+
+/*
+Queue stuff below
+*/
+
+
+
+queue * createQueue(int maxElements) {
+	//create a new queue
+	queue *queueHead;
+	queueHead = malloc(sizeof(queue));
+
+	//this queue stores ints and this will malloc out space for the required number of ints
+	//this will return an array of ints of size maxElements
+	queueHead->elements = malloc(sizeof(int) * maxElements);
+	queueHead->size = 0;
+	queueHead->capacity = maxElements;
+	queueHead->front = 0;
+	queueHead->rear = -1;
+	/* Return the pointer */
+	return queueHead;
+}
+
+int isqueueHeadueueEmpty(queue *queueHead) {
+	if (queueHead->size == 0) {
+		return 0;
+	} else return 1;
+}
+
+void dequeue(queue *queueHead) {
+	//if the queue is empty you can't pop so dont do anything
+	if (queueHead->size == 0) {
+		FA_BTSendString("queueHeadueue is empty can't Dequeue.\n", 50);
+		return;
+	}
+	// dont need to delete the data just move the number of the front up by one
+	else {
+		queueHead->size--;
+		queueHead->front++;
+		//go back to the start incase the queue is now filled up
+		if (queueHead->front == queueHead->capacity) {
+			queueHead->front = 0;
+		}
+	}
+	return;
+}
+
+int front(queue *queueHead) {
+	if (queueHead->size == 0) {
+		FA_BTSendString("queueHeadueue is empty can't get the front elements.\n", 50);
+		return NULL;
+	}
+	/* Return the element which is at the front*/
+	return queueHead->elements[queueHead->front];
+}
+
+void enqueue(queue *queueHead, int element) {
+	/* If the queueHeadueue is full, we cannot push an element into it as there is no space for it.*/
+	if (queueHead->size == queueHead->capacity) {
+		FA_BTSendString("queueHeadueue is full can't add a new element.\n", 50);
+	}
+	else {
+		queueHead->size++;
+		queueHead->rear = queueHead->rear + 1;
+		//if the queue is full circle back round
+		if (queueHead->rear == queueHead->capacity) {
+			queueHead->rear = 0;
+		}
+
+		/* Insert the element in its rear side */
+		queueHead->elements[queueHead->rear] = element;
+	}
+	return;
 }

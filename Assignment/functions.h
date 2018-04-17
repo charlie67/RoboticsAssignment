@@ -1,3 +1,22 @@
+typedef struct head {
+	int capacity;
+	int size;
+	int front;
+	int rear;
+	int *elements;
+} queue;
+
+queue * createQueue(int maxElements);
+
+int isQueueEmpty(queue *queueHead);
+
+void dequeue(queue *queueHead);
+
+int front(queue *queueHead);
+
+void enqueue(queue *queueHead, int element);
+
+
 typedef struct box {
 	int id;
 
@@ -38,20 +57,8 @@ void compassLeft(void);
 
 void compass180(void);
 
-void navigate(square *start, square *end);
-
 void lightShow(int counter);
 
 void moveAlongStack(void);
 
 void celebrate(void);
-
-unsigned char anyBranchesNorth(square *start);
-
-unsigned char anyBranchesSouth(square *start);
-
-unsigned char anyBranchesEast(square *start);
-
-unsigned char anyBranchesWest(square *start);
-
-int numBlockedSides(square *block);

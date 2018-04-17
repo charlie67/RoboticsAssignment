@@ -1,0 +1,432 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"FA_BTS",
+				"FA_BTSendString"
+			],
+			[
+				"dar",
+				"darkSquare"
+			],
+			[
+				"FA_BT",
+				"FA_BTSendNumber"
+			],
+			[
+				"SQ",
+				"MAX_SQUARE_ID"
+			],
+			[
+				"square",
+				"squareId"
+			],
+			[
+				"re",
+				"returnNode"
+			],
+			[
+				"move",
+				"moveSquare"
+			],
+			[
+				"comp",
+				"compassRight"
+			],
+			[
+				"FA_Read",
+				"FA_ReadSwitch"
+			],
+			[
+				"com",
+				"compass"
+			],
+			[
+				"compass",
+				"compass180"
+			],
+			[
+				"all",
+				"allLEDOn"
+			],
+			[
+				"FA_BTD",
+				"FA_BTSendString"
+			],
+			[
+				"FA_REad",
+				"FA_ReadLight"
+			],
+			[
+				"disc",
+				"discoverMaze"
+			],
+			[
+				"FA_LCD",
+				"FA_LCDBacklight"
+			],
+			[
+				"FA_BTSend",
+				"FA_BTSendNumber"
+			],
+			[
+				"FRO",
+				"FRONT_LEFT_NUMBER"
+			],
+			[
+				"FRONT",
+				"FRONT_RIGHT_NUMBER"
+			],
+			[
+				"dis",
+				"discoverMaze"
+			],
+			[
+				"FA_",
+				"FA_Left"
+			],
+			[
+				"Right",
+				"RIGHT_NUMBER"
+			],
+			[
+				"left",
+				"LEFT_NUMBER"
+			],
+			[
+				"fro",
+				"FRONT_NUMBER"
+			],
+			[
+				"disco",
+				"discoverMaze"
+			],
+			[
+				"FA_dela",
+				"FA_DelaySecs"
+			],
+			[
+				"rig",
+				"RIGHT_NUMBER"
+			],
+			[
+				"right",
+				"rightIR"
+			],
+			[
+				"start",
+				"startSquare"
+			],
+			[
+				"allL",
+				"allLEDOff"
+			],
+			[
+				"back",
+				"backSquare"
+			],
+			[
+				"active",
+				"activeSquare"
+			],
+			[
+				"acti",
+				"activeSquare"
+			],
+			[
+				"FA_BTSe",
+				"FA_BTSendString"
+			],
+			[
+				"front",
+				"frontSquare"
+			],
+			[
+				"BT",
+				"FA_BTSendUnsigned"
+			],
+			[
+				"r",
+				"right"
+			],
+			[
+				"ri",
+				"rightSquare"
+			],
+			[
+				"act",
+				"activeSquare"
+			],
+			[
+				"ret",
+				"returnNode"
+			],
+			[
+				"FA_Dea",
+				"FA_DelaySecs"
+			],
+			[
+				"FA_t",
+				"FA_Right"
+			],
+			[
+				"FA_BTSE",
+				"FA_BTSendString"
+			],
+			[
+				"FA_BTSen",
+				"FA_BTSendUnsigned"
+			],
+			[
+				"FA_B",
+				"FA_BTSendString"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 282.0,
+		"last_filter": "auto",
+		"selected_items":
+		[
+			[
+				"auto",
+				"AutoFoldCode: Clear"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"remov",
+				"Package Control: Remove Repository"
+			],
+			[
+				"repos",
+				"Package Control: Remove Repository"
+			],
+			[
+				"add re",
+				"Package Control: Add Repository"
+			],
+			[
+				"git push",
+				"Git: Push"
+			],
+			[
+				"git comm",
+				"Git: Commit"
+			],
+			[
+				"git add",
+				"Git: Add All"
+			],
+			[
+				"PACKAGE",
+				"Package Control: List Packages"
+			],
+			[
+				"package control",
+				"Package Control: Install Package"
+			],
+			[
+				"git pus",
+				"Git: Push"
+			],
+			[
+				"git",
+				"Git: Commit"
+			],
+			[
+				"box",
+				"Boxy Theme: Preferences"
+			],
+			[
+				"packa",
+				"Install Package Control"
+			]
+		],
+		"width": 551.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/home/charlie/uni/RoboticsAssignemnt/Assignment"
+	],
+	"file_history":
+	[
+		"/home/charlie/uni/RoboticsAssignemnt/Assignment/program.c",
+		"/home/charlie/uni/RoboticsAssignemnt/Assignment/functions.h",
+		"/home/charlie/.config/sublime-text-3/Packages/SublimeAStyleFormatter/SublimeAStyleFormatter.sublime-settings",
+		"/home/charlie/.config/sublime-text-3/Packages/SublimeAStyleFormatter/options_default.json",
+		"/home/charlie/Desktop/website/css/main.css",
+		"/tmp/fz3temp-1/seedbox.charlie.to.conf",
+		"/tmp/fz3temp-1/.rtorrent.rc",
+		"/home/charlie/Downloads/Takeout/Search Contributions/Thumbs.json",
+		"/home/charlie/Downloads/Takeout/Location History/Location History.json",
+		"/home/charlie/Downloads/Takeout/Google Photos/2018-03-29/FB_IMG_1522340153476.jpg.json",
+		"/home/charlie/Desktop/index.html",
+		"/tmp/fz3temp-1/preferences.json",
+		"/home/charlie/Desktop/aber vpn/ssl-vpn-TCP-443-config.ovpn",
+		"/home/charlie/uni/RoboticsAssignemnt/Assignment/xc16",
+		"/home/charlie/uni/RoboticsAssignemnt/Assignment/library.c",
+		"/home/charlie/uni/robotics assignment/Assignment/program.c",
+		"/home/charlie/uni/robotics assignment/Assignment/functions.h",
+		"/run/user/1000/gvfs/smb-share:server=smb1.aber.ac.uk,share=chr40/documents/2nd Year/CS26020/Assignment/functions.h",
+		"/run/user/1000/gvfs/smb-share:server=smb1.aber.ac.uk,share=chr40/documents/2nd Year/CS26020/Assignment/program.c",
+		"/run/user/1000/gvfs/smb-share:server=smb1.aber.ac.uk,share=chr40/documents/2nd Year/Semester 1/CS23820/assignment/C++/Dolphin.cpp",
+		"/home/charlie/Downloads/2018-02-23_minutes",
+		"/home/charlie/Downloads/2018-02-18_minutes",
+		"/home/charlie/Downloads/Minutes_Group_Meeting_09-02-18_V2 (1)",
+		"/home/charlie/Downloads/2018-02-16_minutes",
+		"/home/charlie/Downloads/Minutes_Group_Meeting_09-02-18_V1",
+		"/usr/share/applications/sublime_text.desktop",
+		"/usr/share/applications/defaults.list",
+		"/home/charlie/Downloads/2018-03-06_minutes"
+	],
+	"find":
+	{
+		"height": 26.0
+	},
+	"find_in_files":
+	{
+		"height": 130.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 26.0
+	},
+	"input":
+	{
+		"height": 42.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "allcode_api.sublime-project",
+	"replace":
+	{
+		"height": 48.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

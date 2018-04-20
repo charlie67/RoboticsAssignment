@@ -1,22 +1,3 @@
-typedef struct head {
-	int capacity;
-	int size;
-	int front;
-	int rear;
-	int *elements;
-} queue;
-
-queue * createQueue(int maxElements);
-
-int isQueueEmpty(queue *queueHead);
-
-void dequeue(queue *queueHead);
-
-int front(queue *queueHead);
-
-void enqueue(queue *queueHead, int element);
-
-
 typedef struct box {
 	int id;
 
@@ -45,8 +26,6 @@ void allLEDOn(void);
 
 void allLEDOff(void);
 
-void movement(void);
-
 void discoverMaze(void);
 
 void measureLight(void);
@@ -62,3 +41,25 @@ void lightShow(int counter);
 void moveAlongStack(void);
 
 void celebrate(void);
+
+void printAdjList(void);
+
+void connectAdj(int id1, int id2);
+
+void printDistances(int n);
+
+void dijkstra(int src);
+
+int minDistance(bool sptSet[]);
+
+void moveOverStack(int dest);
+
+void moveToSquare(int destination);
+
+void faceNorth(void);
+
+void faceEast(void);
+
+void faceWest(void);
+
+void faceSouth(void);

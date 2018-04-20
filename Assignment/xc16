@@ -5,7 +5,7 @@ XC16_PATH=/opt/microchip/xc16/v1.33/bin
 
 # Compiler & linker options necessary to compile for robot dsPIC
 MCC_FLAGS="-mcpu=33EP256MU810 -mno-eds-warn -omf=elf -DXPRJ_default=default -legacy-libc -msmart-io=1 -msfr-warn=off"
-MLD_FLAGS="-Wl,--local-stack,,--defsym=__MPLAB_BUILD=1,,--script=p33EP256MU810.gld,--heap=400,--stack=16,--check-sections,--data-init,--pack-data,--handles,--isr,--no-gc-sections,--fill-upper=0,--stackguard=16,--no-force-link,--smart-io"
+MLD_FLAGS="-Wl,--local-stack,,--defsym=__MPLAB_BUILD=1,,--script=p33EP256MU810.gld,--heap=450,--stack=16,--check-sections,--data-init,--pack-data,--handles,--isr,--no-gc-sections,--fill-upper=0,--stackguard=16,--no-force-link,--smart-io"
 
 # Invoke compiler with required options plus any specified on the command line
 $XC16_PATH/xc16-gcc \

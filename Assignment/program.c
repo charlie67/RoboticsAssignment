@@ -2,6 +2,7 @@
 #include "functions.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 //if these are defined then debug data is outputted via bluetooth
 // #define SENSOR__OUTPUTS
@@ -9,9 +10,12 @@
 // #define COMPASS_OUTPUTS
 // #define MAP_ID_OUTPUTS
 // #define SQUARE_SEPERATOR
-#define SQUARE_EXPLORATION_OUTPUTS
+// #define SQUARE_EXPLORATION_OUTPUTS
 // #define SQUARE_MOVEMENT_OUTPUTS
-#define NAVIGATIONS_OUTPUTS
+// #define ADJANCY_OUTPUTS
+// #define STACK_OUTPUTS
+// #define DIJKSTRA_OUTPUT
+// #define MOVING_BACK_OUTPUTS
 
 square *activeSquare;
 square *startSquare;
@@ -23,13 +27,10 @@ static int LEFT_NUMBER = 30;
 static int FRONT_NUMBER = 50;
 static int BACK_NUMBER = 595;
 static int FRONT_LEFT_NUMBER = 130;
-static int FRONT_RIGHT_NUMBER = 115;
+static int FRONT_RIGHT_NUMBER = 135;
 
 //if the light level is lower than this the square is marked as a dark square
 static int LIGHT_LEVEL = 300;
-
-//when the square id is equal to this number the entire maze has been ignored
-static int MAX_SQUARE_ID = 16;
 
 static int NORTH_COMPASS_HEADING = 0;
 static int SOUTH_COMPASS_HEADING = 180;
@@ -40,12 +41,45 @@ static int NULL_COMPASS_HEADING = -1;
 static int SQUARE_SEARCHED = 0;
 static int SQUARE_UNSEARCHED = 1;
 
+static int INT_MAX = 100;
+
+static int RIGHT_ANGLE = 85;
+static int LEFT_ANGLE = 85;
+static int TURN_ANGLE = 170;
+
+//when the square id is equal to this number the entire maze has been ignored
+static int MAX_SQUARE_ID = 16;
+
 int compass;
 int squareId;
+
+unsigned char adjancy[16][16];
+//0 is not connected 1 is connected
+
+int dist[16];
+//distance outputs of dijkstras
+
+int visit[16];
+
+char movement[16];
+int movementCounter;
+
 
 int main() {
 	FA_RobotInit();
 	FA_LCDBacklight(50);
+
+	int i, j;
+	for (i = 0; i < 16; i++) {
+		for (j = 0; j < 16; j++) {
+			adjancy[i][j] = 0;
+		}
+	}
+
+	#ifdef ADJANCY_OUTPUTS
+	printAdjList();
+	#endif
+
 
 	square *startSquare = createSquare();
 
@@ -64,23 +98,186 @@ int main() {
 			break;
 		}
 	}
-	FA_BTSendString("Connected\n", 20);
+	FA_BTSendString("Connected\n", 15);
 	FA_LCDBacklight(0);
 
 	compass = 0;
 	squareId = 0;
 	startSquare = createSquare();
 
-	discoverMaze();
-	// celebrate();
+	// measureCornerSensors();
 
+	discoverMaze();
+	celebrate();
+
+	FA_BTSendString("Going to dark square!\n", 35);
+
+	for (i = 0; i < 16; i++) {
+		movement[i] = -1;
+	}
+
+	movementCounter = 0;
+
+	dijkstra(activeSquare->id);
+
+	moveToSquare(darkSquare->id);
+
+	moveOverStack(darkSquare->id);
+	
+	FA_BTSendString("Finished!\n", 35);
+	FA_LCDBacklight(100);
+	FA_LCDPrint("Finished!", 16, 20 ,25, FONT_NORMAL, LCD_OPAQUE);
+	celebrate();
 
 
 	return 0;
 }
 
-int search() {
+void moveOverStack(int dest) {
+	movementCounter--;
+	//need to take one away because it is incremented at the end before quitting the function
+	int moves = dist[dest];
 
+	#ifdef MOVING_BACK_OUTPUTS
+	FA_BTSendString("moves to take ", 20);
+	FA_BTSendNumber(moves);
+	FA_BTSendString(".\n", 6);
+	#endif
+
+	int i;
+	for (i = 0; i < moves; i++) {
+		#ifdef SQUARE_SEPERATOR
+		FA_BTSendString("\n\n\n\n", 10);
+		#endif
+
+		int squareId = movement[movementCounter];
+
+		#ifdef MOVING_BACK_OUTPUTS
+		FA_BTSendString("in square  ", 20);
+		FA_BTSendNumber(activeSquare->id);
+		FA_BTSendString(".\n", 6);
+		#endif
+
+		#ifdef MOVING_BACK_OUTPUTS
+		FA_BTSendString("want to go to square ", 25);
+		FA_BTSendNumber(squareId);
+		FA_BTSendString(".\n", 6);
+		#endif
+
+		#ifdef MOVING_BACK_OUTPUTS
+		FA_BTSendString("movementCounter = ", 25);
+		FA_BTSendNumber(movementCounter);
+		FA_BTSendString(".\n", 6);
+		#endif
+
+		square * north = activeSquare->north;
+		square * east = activeSquare->east;
+		square * south = activeSquare->south;
+		square * west = activeSquare->west;
+
+		if (north != NULL && (north->id == squareId || north->id == dest)) {
+			//move north and go forwards
+			#ifdef MOVING_BACK_OUTPUTS
+			FA_BTSendString("going north.\n", 20);
+			#endif
+
+			faceNorth();
+			moveUntillOverLine();
+
+		} else if (east != NULL && (east->id == squareId || east->id == dest)) {
+			#ifdef MOVING_BACK_OUTPUTS
+			FA_BTSendString("going east.\n", 20);
+			#endif
+
+			faceEast();
+			moveUntillOverLine();
+
+		} else if (south != NULL && (south->id == squareId || south->id == dest)) {
+			#ifdef MOVING_BACK_OUTPUTS
+			FA_BTSendString("going south.\n", 20);
+			#endif
+
+			faceSouth();
+			moveUntillOverLine();
+
+		} else if (west != NULL && (west->id == squareId || north->id == dest)) {
+			#ifdef MOVING_BACK_OUTPUTS
+			FA_BTSendString("going west.\n", 20);
+			#endif
+			faceWest();
+			moveUntillOverLine();
+
+		} else {
+			while (1) {
+				FA_BTSendNumber(squareId);
+				FA_BTSendString(" move over stack failed.\n", 30);
+				FA_DelaySecs(2);
+			}
+		}
+		movementCounter--;
+	}
+
+}
+
+void faceNorth(void) {
+	while (1) {
+		if (compass == 0) return;
+		FA_Right(RIGHT_ANGLE);
+		compassRight();
+	}
+}
+
+void faceEast(void) {
+	while (1) {
+		if (compass == 90) return;
+		FA_Right(RIGHT_ANGLE);
+		compassRight();
+	}
+}
+
+void faceWest(void) {
+	while (1) {
+		if (compass == 270) return;
+		FA_Right(RIGHT_ANGLE);
+		compassRight();
+	}
+}
+
+void faceSouth(void) {
+	while (1) {
+		if (compass == 180) return;
+		FA_Right(RIGHT_ANGLE);
+		compassRight();
+	}
+}
+
+void moveToSquare(int destination) {
+	int distance = dist[destination];
+	//knows how many squares it has to go to
+
+	int nextSquare = destination;
+
+	int i;
+	for (i = 0; i < distance; i++) {
+		if (visit[nextSquare] != activeSquare->id) {
+			movement[movementCounter] = visit[nextSquare];
+			nextSquare = visit[nextSquare];
+
+			#ifdef STACK_OUTPUTS
+			FA_BTSendNumber(nextSquare);
+			FA_BTSendString(" is next square to move to\n", 30);
+			FA_BTSendNumber(movementCounter);
+			FA_BTSendString("\n", 5);
+			#endif
+
+			movementCounter++;
+		} else {
+			#ifdef STACK_OUTPUTS
+			FA_BTSendNumber(nextSquare);
+			FA_BTSendString(" is not being put on the stack\n", 35);
+			#endif
+		}
+	}
 }
 
 void discoverMaze(void) {
@@ -104,7 +301,8 @@ void discoverMaze(void) {
 			#endif
 
 			allLEDOn();
-			FA_Right(180);
+			// FA_PlayNote(261, 250);
+			FA_Right(TURN_ANGLE);
 			compass180();
 
 			break;
@@ -141,12 +339,12 @@ void discoverMaze(void) {
 			FA_BTSendString("Found dark square\n", 30);
 
 			allLEDOn();
-			// FA_PlayNote(261, 100);
+			// FA_PlayNote(261, 250);
 			FA_LCDBacklight(100);
 
 			darkSquare = activeSquare;
 
-			FA_Right(180);
+			FA_Right(TURN_ANGLE);
 			compass180();
 			moveUntillOverLine();
 			continue;
@@ -155,7 +353,7 @@ void discoverMaze(void) {
 		//if left front and right are all blocked do a 180 and go forwards
 		if (leftIR >= LEFT_NUMBER && rightIR >= RIGHT_NUMBER && frontIR >= FRONT_NUMBER) {
 			//need to go backwards
-			FA_Right(180);
+			FA_Right(TURN_ANGLE);
 			compass180();
 
 			moveUntillOverLine();
@@ -164,7 +362,7 @@ void discoverMaze(void) {
 
 		//if left and right is free go right
 		if (leftIR < LEFT_NUMBER && rightIR < RIGHT_NUMBER) {
-			FA_Right(90);
+			FA_Right(RIGHT_ANGLE);
 			compassRight();
 
 			moveUntillOverLine();
@@ -176,12 +374,12 @@ void discoverMaze(void) {
 			moveUntillOverLine();
 		} else if (leftIR <= LEFT_NUMBER) {
 			//if left is clear go left
-			FA_Left(90);
+			FA_Left(LEFT_ANGLE);
 			compassLeft();
 
 			moveUntillOverLine();
 		} else {
-			FA_Right(90);
+			FA_Right(RIGHT_ANGLE);
 			compassRight();
 
 			moveUntillOverLine();
@@ -189,9 +387,95 @@ void discoverMaze(void) {
 	}
 }
 
+void connectAdj(int id1, int id2) {
+	adjancy[id1][id2] = 1;
+	adjancy[id2][id1] = 1;
+
+	#ifdef ADJANCY_OUTPUTS
+	FA_BTSendNumber(id1);
+	FA_BTSendString(" is connected to ", 20);
+	FA_BTSendNumber(id2);
+	FA_BTSendString("\n", 20);
+	printAdjList();
+	#endif
+}
+
+int minDistance(bool sptSet[]) {
+	// Initialize min value
+	int min = INT_MAX, min_index;
+
+	int v;
+	for (v = 0; v < MAX_SQUARE_ID; v++)
+		if (sptSet[v] == false && dist[v] <= min)
+			min = dist[v], min_index = v;
+	//if that square is not visited and the distance to it is less than the current minium
+	//update the min and hte indes location of that value
+
+	return min_index;
+}
+
+void dijkstra(int src) {
+	#ifdef DIJKSTRA_OUTPUT
+	FA_BTSendString("dijkstra started\n", 20);
+	#endif
+
+
+	bool sptSet[MAX_SQUARE_ID]; // sptSet[i] will true if vertex i is included in shortest
+	// path tree or shortest distance from src to i is finalized
+
+	// Initialize all distances as INFINITE and stpSet[] as false
+	int i;
+	for (i = 0; i < MAX_SQUARE_ID; i++)
+		dist[i] = INT_MAX, sptSet[i] = false;
+
+	// Distance of source vertex from itself is always 0
+	dist[src] = 0;
+
+	//go over all the items in the graph finding the shortest path to them
+	int count;
+	for (count = 0; count < MAX_SQUARE_ID - 1; count++) {
+		// Pick the minimum distance vertex from the set of vertices not
+		// yet processed. u is always equal to src in first iteration.
+		int u = minDistance(sptSet);
+
+		// Mark the picked vertex as processed
+		sptSet[u] = true;
+
+		// Update dist value of the adjacent vertices of the picked vertex.
+		int v;
+		for (v = 0; v < MAX_SQUARE_ID; v++)
+
+			// Update dist[v] only if is not in sptSet, there is an edge from
+			// u to v, and total weight of path from src to  v through u is
+			// smaller than current value of dist[v]
+			if (!sptSet[v] && adjancy[u][v] && dist[u] != INT_MAX
+			        && dist[u] + adjancy[u][v] < dist[v]) {
+				dist[v] = dist[u] + adjancy[u][v];
+				visit[v] = u;
+				//to get to v you have to be in u
+			}
+	}
+	#ifdef DIJKSTRA_OUTPUT
+	//print the constructed distance array
+	printDistances(MAX_SQUARE_ID);
+	#endif
+}
+
+void printDistances(int n) {
+	FA_BTSendString("Vertex   Distance from Source\n", 30);
+	int i;
+	for (i = 0; i < MAX_SQUARE_ID; i++) {
+		FA_BTSendNumber(i);
+		FA_BTSendString("\t\t", 6);
+		FA_BTSendNumber(dist[i]);
+		FA_BTSendString("\n", 3);
+	}
+}
+
 void moveUntillOverLine(void) {
 	unsigned short frontLeftIR = FA_ReadIR(1);
 	unsigned short frontRightIR = FA_ReadIR(3);
+	unsigned short frontIR = FA_ReadIR(2);
 
 	#ifdef MAP_ID_OUTPUTS
 	FA_BTSendString("Was in square ", 20);
@@ -215,6 +499,8 @@ void moveUntillOverLine(void) {
 
 			moveSquare->south = activeSquare;
 
+			connectAdj(activeSquare->id, moveSquare->id);
+
 			activeSquare->north = moveSquare;
 			activeSquare = moveSquare;
 
@@ -231,6 +517,8 @@ void moveUntillOverLine(void) {
 			square *moveSquare = createSquare();
 
 			moveSquare->west = activeSquare;
+
+			connectAdj(activeSquare->id, moveSquare->id);
 
 			activeSquare->east = moveSquare;
 			activeSquare = moveSquare;
@@ -250,6 +538,8 @@ void moveUntillOverLine(void) {
 
 			moveSquare->north = activeSquare;
 
+			connectAdj(activeSquare->id, moveSquare->id);
+
 			activeSquare->south = moveSquare;
 			activeSquare = moveSquare;
 
@@ -267,6 +557,8 @@ void moveUntillOverLine(void) {
 			square *moveSquare = createSquare();
 
 			moveSquare->east = activeSquare;
+
+			connectAdj(activeSquare->id, moveSquare->id);
 
 			activeSquare->west = moveSquare;
 			activeSquare = moveSquare;
@@ -348,6 +640,86 @@ void moveUntillOverLine(void) {
 			allLEDOn();
 			break;
 			//gone over the line
+		}
+
+		frontLeftIR = FA_ReadIR(1);
+		frontRightIR = FA_ReadIR(3);
+		frontIR = FA_ReadIR(2);
+
+		if (frontLeftIR >= 300) {
+			FA_SetMotors(0, 0);
+			FA_SetDriveSpeed(60);
+
+			#ifdef TILT_OUTPUTS
+			FA_BTSendString("while loop Front left is too close\n", 45);
+			FA_BTSendString("Front left is ", 30);
+			FA_BTSendNumber(frontLeftIR);
+			FA_BTSendString("\n", 20);
+			#endif
+
+			FA_Backwards(10);
+			FA_Right(5);
+			FA_Forwards(10);
+			frontLeftIR = FA_ReadIR(1);
+
+			#ifdef TILT_OUTPUTS
+			FA_BTSendString("Front left is ", 30);
+			FA_BTSendNumber(frontLeftIR);
+			FA_BTSendString("\n", 20);
+			#endif
+
+			FA_SetMotors(53, 58);
+		}
+
+		if (frontRightIR >= 300) {
+
+			FA_SetMotors(0, 0);
+			FA_SetDriveSpeed(60);
+
+			#ifdef TILT_OUTPUTS
+			FA_BTSendString("while loop Front right is too close\n", 45);
+			FA_BTSendString("Front right is ", 30);
+			FA_BTSendNumber(frontRightIR);
+			FA_BTSendString("\n", 20);
+			#endif
+
+			FA_Backwards(10);
+			FA_Left(5);
+			FA_Forwards(10);
+			frontRightIR = FA_ReadIR(3);
+
+			#ifdef TILT_OUTPUTS
+			FA_BTSendString("Front right is ", 30);
+			FA_BTSendNumber(frontRightIR);
+			FA_BTSendString("\n", 20);
+			#endif
+
+			FA_SetMotors(53, 58);
+		}
+
+		if (frontIR >= 150) {
+			FA_SetMotors(0, 0);
+			FA_SetDriveSpeed(60);
+
+			#ifdef TILT_OUTPUTS
+			FA_BTSendString("while loop Front  is too close\n", 45);
+			FA_BTSendString("Front is ", 30);
+			FA_BTSendNumber(frontIR);
+			FA_BTSendString("\n", 20);
+			#endif
+
+			FA_Backwards(15);
+			FA_Right(5);
+			FA_Forwards(15);
+			frontIR = FA_ReadIR(2);
+
+			#ifdef TILT_OUTPUTS
+			FA_BTSendString("Front is ", 30);
+			FA_BTSendNumber(frontIR);
+			FA_BTSendString("\n", 20);
+			#endif
+
+			FA_SetMotors(53, 58);
 		}
 	}
 
@@ -446,13 +818,36 @@ void moveUntillOverLine(void) {
 	//the robot is now properly aligned and can move forwards to take it into the centre of the square.
 	FA_Forwards(105);
 
-	// FA_DelayMillis(300);
+	frontLeftIR = FA_ReadIR(1);
+	frontRightIR = FA_ReadIR(3);
+	unsigned char backRightIR = FA_ReadIR(5);
+	unsigned char backLeftIR = FA_ReadIR(7);
+
+	int difference = backRightIR - backLeftIR;
+	if (difference > 0) difference *= -1;
+
+
+	while (difference > 200 ) {
+
+		#ifdef TILT_OUTPUTS
+		FA_BTSendString("Robot is unbalanced correcting\n", 20);
+		#endif
+
+		FA_Right(5);
+		backRightIR = FA_ReadIR(5);
+		backLeftIR = FA_ReadIR(7);
+
+		difference = backRightIR - backLeftIR;
+		if (difference > 0) difference *= -1;
+	}
+
+	FA_DelayMillis(300);
 }
 
 void compassLeft(void) {
 
 	#ifdef COMPASS_OUTPUTS
-	FA_BTSendString("Compass was ", 20);
+	FA_BTSendString("compass was ", 20);
 	FA_BTSendNumber(compass);
 	FA_BTSendString("\n", 5);
 	#endif
@@ -465,7 +860,7 @@ void compassLeft(void) {
 	}
 
 	#ifdef COMPASS_OUTPUTS
-	FA_BTSendString("Compass now ", 20);
+	FA_BTSendString("compass now ", 20);
 	FA_BTSendNumber(compass);
 	FA_BTSendString("\n", 5);
 	#endif
@@ -474,7 +869,7 @@ void compassLeft(void) {
 void compassRight(void) {
 
 	#ifdef COMPASS_OUTPUTS
-	FA_BTSendString("Compass was ", 20);
+	FA_BTSendString("compass was ", 20);
 	FA_BTSendNumber(compass);
 	FA_BTSendString("\n", 5);
 	#endif
@@ -483,7 +878,7 @@ void compassRight(void) {
 	compass %= 360;
 
 	#ifdef COMPASS_OUTPUTS
-	FA_BTSendString("Compass now ", 20);
+	FA_BTSendString("compass now ", 20);
 	FA_BTSendNumber(compass);
 	FA_BTSendString("\n", 5);
 	#endif
@@ -492,7 +887,7 @@ void compassRight(void) {
 void compass180(void) {
 
 	#ifdef COMPASS_OUTPUTS
-	FA_BTSendString("Compass was ", 20);
+	FA_BTSendString("compass was ", 20);
 	FA_BTSendNumber(compass);
 	FA_BTSendString("\n", 5);
 	#endif
@@ -501,7 +896,7 @@ void compass180(void) {
 	compass %= 360;
 
 	#ifdef COMPASS_OUTPUTS
-	FA_BTSendString("Compass now ", 20);
+	FA_BTSendString("compass now ", 20);
 	FA_BTSendNumber(compass);
 	FA_BTSendString("\n", 5);
 	#endif
@@ -563,8 +958,6 @@ void celebrate(void) {
 	FA_Right(30);
 	FA_Left(30);
 	lightShow(10);
-	FA_Right(720);
-	FA_Left(720);
 }
 
 void measureCornerSensors(void) {
@@ -587,6 +980,16 @@ void measureCornerSensors(void) {
 		unsigned short backRightIR = FA_ReadIR(5);
 		FA_BTSendString("Back Right: ", 20);
 		FA_BTSendNumber(backRightIR);
+		FA_BTSendString("\n", 10);
+
+		unsigned short leftIR = FA_ReadIR(0);
+		FA_BTSendString("left: ", 20);
+		FA_BTSendNumber(leftIR);
+		FA_BTSendString("\n", 10);
+
+		unsigned short rightIR = FA_ReadIR(4);
+		FA_BTSendString("Right: ", 20);
+		FA_BTSendNumber(rightIR);
 		FA_BTSendString("\n", 10);
 
 		FA_DelaySecs(2);
@@ -624,76 +1027,16 @@ void measureLight(void) {
 	}
 }
 
-/*
-Queue stuff below
-*/
+#ifdef ADJANCY_OUTPUTS
+void printAdjList(void) {
+	int rows, cols;
 
-
-
-queue * createQueue(int maxElements) {
-	//create a new queue
-	queue *queueHead;
-	queueHead = malloc(sizeof(queue));
-
-	//this queue stores ints and this will malloc out space for the required number of ints
-	//this will return an array of ints of size maxElements
-	queueHead->elements = malloc(sizeof(int) * maxElements);
-	queueHead->size = 0;
-	queueHead->capacity = maxElements;
-	queueHead->front = 0;
-	queueHead->rear = -1;
-	/* Return the pointer */
-	return queueHead;
-}
-
-int isqueueHeadueueEmpty(queue *queueHead) {
-	if (queueHead->size == 0) {
-		return 0;
-	} else return 1;
-}
-
-void dequeue(queue *queueHead) {
-	//if the queue is empty you can't pop so dont do anything
-	if (queueHead->size == 0) {
-		FA_BTSendString("queueHeadueue is empty can't Dequeue.\n", 50);
-		return;
-	}
-	// dont need to delete the data just move the number of the front up by one
-	else {
-		queueHead->size--;
-		queueHead->front++;
-		//go back to the start incase the queue is now filled up
-		if (queueHead->front == queueHead->capacity) {
-			queueHead->front = 0;
+	for (rows = 0; rows < 16; rows++) {
+		for (cols = 0; cols < 16; cols++) {
+			FA_BTSendNumber(adjancy[rows][cols]);
+			FA_BTSendString(" ", 20);
 		}
+		FA_BTSendString("\n", 20);
 	}
-	return;
 }
-
-int front(queue *queueHead) {
-	if (queueHead->size == 0) {
-		FA_BTSendString("queueHeadueue is empty can't get the front elements.\n", 50);
-		return NULL;
-	}
-	/* Return the element which is at the front*/
-	return queueHead->elements[queueHead->front];
-}
-
-void enqueue(queue *queueHead, int element) {
-	/* If the queueHeadueue is full, we cannot push an element into it as there is no space for it.*/
-	if (queueHead->size == queueHead->capacity) {
-		FA_BTSendString("queueHeadueue is full can't add a new element.\n", 50);
-	}
-	else {
-		queueHead->size++;
-		queueHead->rear = queueHead->rear + 1;
-		//if the queue is full circle back round
-		if (queueHead->rear == queueHead->capacity) {
-			queueHead->rear = 0;
-		}
-
-		/* Insert the element in its rear side */
-		queueHead->elements[queueHead->rear] = element;
-	}
-	return;
-}
+#endif

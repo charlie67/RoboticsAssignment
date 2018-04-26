@@ -5,11 +5,11 @@
 #include <stdbool.h>
 
 //if these are defined then debug data is outputted via bluetooth
-// #define SENSOR__OUTPUTS
-// #define TILT_OUTPUTS
+#define SENSOR__OUTPUTS
+#define TILT_OUTPUTS
 // #define COMPASS_OUTPUTS
 // #define MAP_ID_OUTPUTS
-// #define SQUARE_SEPERATOR
+#define SQUARE_SEPERATOR
 // #define SQUARE_EXPLORATION_OUTPUTS
 // #define SQUARE_MOVEMENT_OUTPUTS
 // #define ADJANCY_OUTPUTS
@@ -22,7 +22,7 @@ square *startSquare;
 square *darkSquare;
 
 //if the IR sensors report numbers greater than these then a wall is detected
-static int RIGHT_NUMBER = 30;
+static int RIGHT_NUMBER = 15;
 static int LEFT_NUMBER = 30;
 static int FRONT_NUMBER = 50;
 static int BACK_NUMBER = 595;
@@ -43,9 +43,9 @@ static int SQUARE_UNSEARCHED = 1;
 
 static int INT_MAX = 100;
 
-static int RIGHT_ANGLE = 85;
-static int LEFT_ANGLE = 85;
-static int TURN_ANGLE = 170;
+static int RIGHT_ANGLE = 83;
+static int LEFT_ANGLE = 83;
+static int TURN_ANGLE = 173;
 
 //when the square id is equal to this number the entire maze has been ignored
 static int MAX_SQUARE_ID = 16;
@@ -54,13 +54,18 @@ int compass;
 int squareId;
 
 unsigned char adjancy[16][16];
+//this acts us a adjacency matrix
 //0 is not connected 1 is connected
 
-int dist[16];
+int distance[16];
 //distance outputs of dijkstras
 
+//acts as a map to see which squares are connected from your current square
+//for example if you want to get to square 10 then it will return the square next to it that
+//you have to reach before visiting that square
 int visit[16];
 
+//these two act as a stack of locations to visit when the robot is navigating back to the dark square
 char movement[16];
 int movementCounter;
 
@@ -75,6 +80,7 @@ int main() {
 			adjancy[i][j] = 0;
 		}
 	}
+	//initalize adjacency matrix to all disconnected
 
 	#ifdef ADJANCY_OUTPUTS
 	printAdjList();
@@ -91,7 +97,7 @@ int main() {
 		FA_LCDClear();
 		if (FA_ReadSwitch(0) == 1) {
 			FA_DelaySecs(2);
-			// break;
+			break;
 		}
 		if (FA_ReadSwitch(1) == 1) {
 			FA_DelaySecs(2);
@@ -105,38 +111,52 @@ int main() {
 	squareId = 0;
 	startSquare = createSquare();
 
-	// measureCornerSensors();
-
 	discoverMaze();
+	FA_BTSendString("Square explored!\n", 25);
 	celebrate();
 
 	FA_BTSendString("Going to dark square!\n", 35);
 
+	if (activeSquare->id == darkSquare->id) {
+		FA_BTSendString("Already in dark square!\n", 25);
+		celebrate();
+		return 0;
+	}
+
+	//perform movement to dark square
 	for (i = 0; i < 16; i++) {
 		movement[i] = -1;
 	}
 
+
 	movementCounter = 0;
 
+
 	dijkstra(activeSquare->id);
-
 	moveToSquare(darkSquare->id);
-
 	moveOverStack(darkSquare->id);
-	
+
 	FA_BTSendString("Finished!\n", 35);
-	FA_LCDBacklight(100);
-	FA_LCDPrint("Finished!", 16, 20 ,25, FONT_NORMAL, LCD_OPAQUE);
+
 	celebrate();
 
+	FA_LCDBacklight(100);
+	FA_LCDPrint("Finished!", 16, 20 , 25, FONT_NORMAL, LCD_OPAQUE);
 
 	return 0;
 }
 
+
+
+
+/*
+This moves over the movement[] array whihc is being used as a stack, this array contains a list of squares to visit with closest square latest in the array
+so goes over the array with latest square first
+*/
 void moveOverStack(int dest) {
 	movementCounter--;
 	//need to take one away because it is incremented at the end before quitting the function
-	int moves = dist[dest];
+	int moves = distance[dest];
 
 	#ifdef MOVING_BACK_OUTPUTS
 	FA_BTSendString("moves to take ", 20);
@@ -200,7 +220,7 @@ void moveOverStack(int dest) {
 			faceSouth();
 			moveUntillOverLine();
 
-		} else if (west != NULL && (west->id == squareId || north->id == dest)) {
+		} else if (west != NULL && (west->id == squareId || west->id == dest)) {
 			#ifdef MOVING_BACK_OUTPUTS
 			FA_BTSendString("going west.\n", 20);
 			#endif
@@ -219,46 +239,80 @@ void moveOverStack(int dest) {
 
 }
 
+/*
+move the robot to face the north side
+*/
 void faceNorth(void) {
 	while (1) {
 		if (compass == 0) return;
+		if (compass == 90) {
+			FA_Left(90);
+			compassLeft();
+			continue;
+		}
 		FA_Right(RIGHT_ANGLE);
 		compassRight();
 	}
 }
 
+/*
+move the robot to face the east side
+*/
 void faceEast(void) {
 	while (1) {
 		if (compass == 90) return;
+		if (compass == 180) {
+			FA_Left(90);
+			compassLeft();
+			continue;
+		}
 		FA_Right(RIGHT_ANGLE);
 		compassRight();
 	}
 }
 
+
+/*
+move the robot to face the west side
+*/
 void faceWest(void) {
 	while (1) {
 		if (compass == 270) return;
+		if (compass == 0) {
+			FA_Left(90);
+			compassLeft();
+			continue;
+		}
 		FA_Right(RIGHT_ANGLE);
 		compassRight();
 	}
 }
 
+/*
+move the robot to face the south side
+*/
 void faceSouth(void) {
 	while (1) {
 		if (compass == 180) return;
+		if (compass == 270){
+			FA_Left(90);
+			compassLeft();
+			continue;
+		}
 		FA_Right(RIGHT_ANGLE);
 		compassRight();
 	}
 }
 
+//fill out the movement stack using the visit map to find out how to visit the destination square
 void moveToSquare(int destination) {
-	int distance = dist[destination];
+	int moveThrough = distance[destination];
 	//knows how many squares it has to go to
 
 	int nextSquare = destination;
 
 	int i;
-	for (i = 0; i < distance; i++) {
+	for (i = 0; i < moveThrough; i++) {
 		if (visit[nextSquare] != activeSquare->id) {
 			movement[movementCounter] = visit[nextSquare];
 			nextSquare = visit[nextSquare];
@@ -280,6 +334,7 @@ void moveToSquare(int destination) {
 	}
 }
 
+//discover thr maze using right hand side wall following
 void discoverMaze(void) {
 
 	while (1) {
@@ -287,6 +342,45 @@ void discoverMaze(void) {
 		#ifdef SQUARE_SEPERATOR
 		FA_BTSendString("\n\n\n\n", 20);
 		#endif
+
+		unsigned short lightLevel = FA_ReadLight();
+
+		//check for the dark square
+		if (lightLevel < LIGHT_LEVEL) {
+			FA_BTSendString("Found dark square\n", 30);
+
+			allLEDOn();
+			FA_PlayNote(261, 250);
+			FA_LCDBacklight(100);
+
+			darkSquare = activeSquare;
+
+
+			//this is needed here iscase the last square is the dark sqaure
+			if (squareId >= MAX_SQUARE_ID) {
+				//the maze has now been fully explored so need to find the way back to the dark square
+
+				#ifdef SQUARE_EXPLORATION_OUTPUTS
+				FA_BTSendString("maze has been explored.\n", 40);
+				FA_BTSendString("In Square ", 20);
+				FA_BTSendNumber(activeSquare->id);
+				FA_BTSendString(" dark square is square ", 40);
+				FA_BTSendNumber(darkSquare->id);
+				FA_BTSendString("\n", 20);
+				#endif
+
+				allLEDOn();
+				FA_PlayNote(261, 250);
+				FA_Right(TURN_ANGLE);
+				compass180();
+
+				break;
+			}
+			FA_Right(TURN_ANGLE);
+			compass180();
+			moveUntillOverLine();
+			continue;
+		}
 
 		if (squareId >= MAX_SQUARE_ID) {
 			//the maze has now been fully explored so need to find the way back to the dark square
@@ -301,7 +395,7 @@ void discoverMaze(void) {
 			#endif
 
 			allLEDOn();
-			// FA_PlayNote(261, 250);
+			FA_PlayNote(261, 250);
 			FA_Right(TURN_ANGLE);
 			compass180();
 
@@ -332,23 +426,7 @@ void discoverMaze(void) {
 		FA_BTSendString("\n", 10);
 		#endif
 
-		unsigned short lightLevel = FA_ReadLight();
 
-		//check for the dark square
-		if (lightLevel < LIGHT_LEVEL) {
-			FA_BTSendString("Found dark square\n", 30);
-
-			allLEDOn();
-			// FA_PlayNote(261, 250);
-			FA_LCDBacklight(100);
-
-			darkSquare = activeSquare;
-
-			FA_Right(TURN_ANGLE);
-			compass180();
-			moveUntillOverLine();
-			continue;
-		}
 
 		//if left front and right are all blocked do a 180 and go forwards
 		if (leftIR >= LEFT_NUMBER && rightIR >= RIGHT_NUMBER && frontIR >= FRONT_NUMBER) {
@@ -387,6 +465,7 @@ void discoverMaze(void) {
 	}
 }
 
+//connect the two supplied ids to be connected on the adjacency matrix
 void connectAdj(int id1, int id2) {
 	adjancy[id1][id2] = 1;
 	adjancy[id2][id1] = 1;
@@ -400,78 +479,90 @@ void connectAdj(int id1, int id2) {
 	#endif
 }
 
+//used by dijkstras to find the next square to try and move yo
 int minDistance(bool sptSet[]) {
-	// Initialize min value
-	int min = INT_MAX, min_index;
+	//initialize min values
+	int min = INT_MAX;
+	int min_index;
 
 	int v;
 	for (v = 0; v < MAX_SQUARE_ID; v++)
-		if (sptSet[v] == false && dist[v] <= min)
-			min = dist[v], min_index = v;
+		if (sptSet[v] == false && distance[v] <= min)
+			min = distance[v], min_index = v;
 	//if that square is not visited and the distance to it is less than the current minium
-	//update the min and hte indes location of that value
+	//update the min and the index location of that value
 
 	return min_index;
 }
 
+//this performs dijkstras on the src square,
+//this will fill the distance[] array with the distances to any square in the maze
+//this also fills the visit map to allow pathfinding to work.
 void dijkstra(int src) {
 	#ifdef DIJKSTRA_OUTPUT
 	FA_BTSendString("dijkstra started\n", 20);
 	#endif
 
 
-	bool sptSet[MAX_SQUARE_ID]; // sptSet[i] will true if vertex i is included in shortest
-	// path tree or shortest distance from src to i is finalized
+	bool sptSet[MAX_SQUARE_ID];
 
-	// Initialize all distances as INFINITE and stpSet[] as false
+	//set all distances as INFINITE and stpSet[] as false
+	//100 is used as infinite for this because it's an unweighted graph
 	int i;
-	for (i = 0; i < MAX_SQUARE_ID; i++)
-		dist[i] = INT_MAX, sptSet[i] = false;
+	for (i = 0; i < MAX_SQUARE_ID; i++) {
+		distance[i] = INT_MAX;
+		sptSet[i] = false;
+	}
 
-	// Distance of source vertex from itself is always 0
-	dist[src] = 0;
+	//distance of source square from itself is always 0
+	distance[src] = 0;
 
 	//go over all the items in the graph finding the shortest path to them
 	int count;
 	for (count = 0; count < MAX_SQUARE_ID - 1; count++) {
-		// Pick the minimum distance vertex from the set of vertices not
-		// yet processed. u is always equal to src in first iteration.
+		//pick the minimum distance square from the set of squares not yet seen
+		//u is always equal to src in first iteration.
 		int u = minDistance(sptSet);
 
-		// Mark the picked vertex as processed
+		//mark the picked square as processed
 		sptSet[u] = true;
 
-		// Update dist value of the adjacent vertices of the picked vertex.
+		//update distance value of the adjacent squares of the picked square.
 		int v;
 		for (v = 0; v < MAX_SQUARE_ID; v++)
 
-			// Update dist[v] only if is not in sptSet, there is an edge from
+			// Update distance[v] only if is not in sptSet, there is an edge from
 			// u to v, and total weight of path from src to  v through u is
-			// smaller than current value of dist[v]
-			if (!sptSet[v] && adjancy[u][v] && dist[u] != INT_MAX
-			        && dist[u] + adjancy[u][v] < dist[v]) {
-				dist[v] = dist[u] + adjancy[u][v];
+			// smaller than current value of distance[v]
+			if (!sptSet[v] && adjancy[u][v] && distance[u] != INT_MAX
+			        && distance[u] + adjancy[u][v] < distance[v]) {
+				distance[v] = distance[u] + adjancy[u][v];
 				visit[v] = u;
-				//to get to v you have to be in u
+				//to get to square v you have to be in square u
+				//so update the map to fill in this information
 			}
 	}
+
 	#ifdef DIJKSTRA_OUTPUT
-	//print the constructed distance array
+	//print the distance array
 	printDistances(MAX_SQUARE_ID);
 	#endif
 }
 
+//print the distance[] array
 void printDistances(int n) {
 	FA_BTSendString("Vertex   Distance from Source\n", 30);
 	int i;
 	for (i = 0; i < MAX_SQUARE_ID; i++) {
 		FA_BTSendNumber(i);
 		FA_BTSendString("\t\t", 6);
-		FA_BTSendNumber(dist[i]);
+		FA_BTSendNumber(distance[i]);
 		FA_BTSendString("\n", 3);
 	}
 }
 
+//move the robot forwards untill it crosses a line
+//this will also link the squares together to form a graph.
 void moveUntillOverLine(void) {
 	unsigned short frontLeftIR = FA_ReadIR(1);
 	unsigned short frontRightIR = FA_ReadIR(3);
@@ -636,12 +727,13 @@ void moveUntillOverLine(void) {
 
 	while (1) {
 		//go forwards untill the line sensor detects the line
-		if (FA_ReadLine(0) < 10) {
+		if (FA_ReadLine(0) < 30 || FA_ReadLine(1) < 30) {
 			allLEDOn();
 			break;
 			//gone over the line
 		}
 
+		//while the robot is moving check the ir sensors to ensure the robot won't hit the wall
 		frontLeftIR = FA_ReadIR(1);
 		frontRightIR = FA_ReadIR(3);
 		frontIR = FA_ReadIR(2);
@@ -697,7 +789,7 @@ void moveUntillOverLine(void) {
 			FA_SetMotors(53, 58);
 		}
 
-		if (frontIR >= 150) {
+		if (frontIR >= 300) {
 			FA_SetMotors(0, 0);
 			FA_SetDriveSpeed(60);
 
@@ -725,7 +817,7 @@ void moveUntillOverLine(void) {
 
 	FA_LCDBacklight(0);
 	allLEDOff();
-	//have the light turn off at the right time when exiting the dark square
+	//have the light turn off for when it exits the dark square
 
 	FA_SetMotors(0, 0);
 	FA_SetDriveSpeed(60);
@@ -766,7 +858,7 @@ void moveUntillOverLine(void) {
 	frontLeftIR = FA_ReadIR(1);
 	frontRightIR = FA_ReadIR(3);
 
-	//the robot is now poitioned on the line and this checks to make sure that the robot won't hit anyhting when it moves forwards
+	//the robot is now poitioned on the line and this checks to make sure that the robot won't hit anything when it moves forwards
 	while (frontLeftIR >= FRONT_LEFT_NUMBER) {
 
 		#ifdef TILT_OUTPUTS
@@ -777,7 +869,7 @@ void moveUntillOverLine(void) {
 		#endif
 
 		FA_Backwards(10);
-		FA_Right(3);
+		FA_Right(5);
 		FA_Forwards(10);
 		frontLeftIR = FA_ReadIR(1);
 
@@ -804,7 +896,7 @@ void moveUntillOverLine(void) {
 		#endif
 
 		FA_Backwards(10);
-		FA_Left(3);
+		FA_Left(5);
 		FA_Forwards(10);
 		frontRightIR = FA_ReadIR(3);
 
@@ -830,7 +922,10 @@ void moveUntillOverLine(void) {
 	while (difference > 200 ) {
 
 		#ifdef TILT_OUTPUTS
-		FA_BTSendString("Robot is unbalanced correcting\n", 20);
+		FA_BTSendString("Robot is unbalanced correcting\n", 30);
+		FA_BTSendString("difference is \n", 20);
+		FA_BTSendNumber(difference);
+		FA_BTSendString("\n", 20);
 		#endif
 
 		FA_Right(5);
@@ -844,6 +939,7 @@ void moveUntillOverLine(void) {
 	FA_DelayMillis(300);
 }
 
+//change the compass 90 degrees to the left
 void compassLeft(void) {
 
 	#ifdef COMPASS_OUTPUTS
@@ -866,6 +962,7 @@ void compassLeft(void) {
 	#endif
 }
 
+//change the compass 90 degrees to the right
 void compassRight(void) {
 
 	#ifdef COMPASS_OUTPUTS
@@ -884,6 +981,7 @@ void compassRight(void) {
 	#endif
 }
 
+//move the compass 180 degrees
 void compass180(void) {
 
 	#ifdef COMPASS_OUTPUTS
@@ -902,6 +1000,7 @@ void compass180(void) {
 	#endif
 }
 
+//malloc out a new square struct and return a pointer to it
 square *createSquare(void) {
 	//wall is 0
 	//3 is unknown
@@ -924,6 +1023,7 @@ square *createSquare(void) {
 	return returnNode;
 }
 
+//switch all the leds on
 void allLEDOn(void) {
 	int i;
 	for (i = 0; i < 8; i++) {
@@ -931,6 +1031,7 @@ void allLEDOn(void) {
 	}
 }
 
+//switch all the leds off
 void allLEDOff(void) {
 	int i;
 	for (i = 0; i < 8; i++) {
@@ -938,6 +1039,7 @@ void allLEDOff(void) {
 	}
 }
 
+//flash all the lights counter number of times
 void lightShow(int counter) {
 	int i;
 	for (i = 0; i < counter; i++) {
@@ -950,16 +1052,20 @@ void lightShow(int counter) {
 	}
 }
 
+//the end finished dance
 void celebrate(void) {
 	FA_SetDriveSpeed(100);
+	FA_PlayNote(261, 250);
 	lightShow(10);
 	FA_Right(30);
 	FA_Left(30);
 	FA_Right(30);
 	FA_Left(30);
 	lightShow(10);
+	// FA_Right(720);
 }
 
+//measure all four corner sensors and print their values out to bluetooth
 void measureCornerSensors(void) {
 	while (1) {
 		unsigned short frontLeftIR = FA_ReadIR(1);
@@ -1017,6 +1123,7 @@ void measureCornerSensors(void) {
 	}
 }
 
+//measure the light sensor and print its values out to bluetooth
 void measureLight(void) {
 	while (1) {
 		FA_LCDClear();
@@ -1028,6 +1135,7 @@ void measureLight(void) {
 }
 
 #ifdef ADJANCY_OUTPUTS
+//print the adjacency matrix out via bluetooth
 void printAdjList(void) {
 	int rows, cols;
 

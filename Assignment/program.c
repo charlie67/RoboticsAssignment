@@ -129,9 +129,8 @@ int main() {
 	}
 
 
+	//perforn the shortest path algorithm 
 	movementCounter = 0;
-
-
 	dijkstra(activeSquare->id);
 	moveToSquare(darkSquare->id);
 	moveOverStack(darkSquare->id);
@@ -144,194 +143,6 @@ int main() {
 	FA_LCDPrint("Finished!", 16, 20 , 25, FONT_NORMAL, LCD_OPAQUE);
 
 	return 0;
-}
-
-
-
-
-/*
-This moves over the movement[] array whihc is being used as a stack, this array contains a list of squares to visit with closest square latest in the array
-so goes over the array with latest square first
-*/
-void moveOverStack(int dest) {
-	movementCounter--;
-	//need to take one away because it is incremented at the end before quitting the function
-	int moves = distance[dest];
-
-	#ifdef MOVING_BACK_OUTPUTS
-	FA_BTSendString("moves to take ", 20);
-	FA_BTSendNumber(moves);
-	FA_BTSendString(".\n", 6);
-	#endif
-
-	int i;
-	for (i = 0; i < moves; i++) {
-		#ifdef SQUARE_SEPERATOR
-		FA_BTSendString("\n\n\n\n", 10);
-		#endif
-
-		int squareId = movement[movementCounter];
-
-		#ifdef MOVING_BACK_OUTPUTS
-		FA_BTSendString("in square  ", 20);
-		FA_BTSendNumber(activeSquare->id);
-		FA_BTSendString(".\n", 6);
-		#endif
-
-		#ifdef MOVING_BACK_OUTPUTS
-		FA_BTSendString("want to go to square ", 25);
-		FA_BTSendNumber(squareId);
-		FA_BTSendString(".\n", 6);
-		#endif
-
-		#ifdef MOVING_BACK_OUTPUTS
-		FA_BTSendString("movementCounter = ", 25);
-		FA_BTSendNumber(movementCounter);
-		FA_BTSendString(".\n", 6);
-		#endif
-
-		square * north = activeSquare->north;
-		square * east = activeSquare->east;
-		square * south = activeSquare->south;
-		square * west = activeSquare->west;
-
-		if (north != NULL && (north->id == squareId || north->id == dest)) {
-			//move north and go forwards
-			#ifdef MOVING_BACK_OUTPUTS
-			FA_BTSendString("going north.\n", 20);
-			#endif
-
-			faceNorth();
-			moveUntillOverLine();
-
-		} else if (east != NULL && (east->id == squareId || east->id == dest)) {
-			#ifdef MOVING_BACK_OUTPUTS
-			FA_BTSendString("going east.\n", 20);
-			#endif
-
-			faceEast();
-			moveUntillOverLine();
-
-		} else if (south != NULL && (south->id == squareId || south->id == dest)) {
-			#ifdef MOVING_BACK_OUTPUTS
-			FA_BTSendString("going south.\n", 20);
-			#endif
-
-			faceSouth();
-			moveUntillOverLine();
-
-		} else if (west != NULL && (west->id == squareId || west->id == dest)) {
-			#ifdef MOVING_BACK_OUTPUTS
-			FA_BTSendString("going west.\n", 20);
-			#endif
-			faceWest();
-			moveUntillOverLine();
-
-		} else {
-			while (1) {
-				FA_BTSendNumber(squareId);
-				FA_BTSendString(" move over stack failed.\n", 30);
-				FA_DelaySecs(2);
-			}
-		}
-		movementCounter--;
-	}
-
-}
-
-/*
-move the robot to face the north side
-*/
-void faceNorth(void) {
-	while (1) {
-		if (compass == 0) return;
-		if (compass == 90) {
-			FA_Left(90);
-			compassLeft();
-			continue;
-		}
-		FA_Right(RIGHT_ANGLE);
-		compassRight();
-	}
-}
-
-/*
-move the robot to face the east side
-*/
-void faceEast(void) {
-	while (1) {
-		if (compass == 90) return;
-		if (compass == 180) {
-			FA_Left(90);
-			compassLeft();
-			continue;
-		}
-		FA_Right(RIGHT_ANGLE);
-		compassRight();
-	}
-}
-
-
-/*
-move the robot to face the west side
-*/
-void faceWest(void) {
-	while (1) {
-		if (compass == 270) return;
-		if (compass == 0) {
-			FA_Left(90);
-			compassLeft();
-			continue;
-		}
-		FA_Right(RIGHT_ANGLE);
-		compassRight();
-	}
-}
-
-/*
-move the robot to face the south side
-*/
-void faceSouth(void) {
-	while (1) {
-		if (compass == 180) return;
-		if (compass == 270){
-			FA_Left(90);
-			compassLeft();
-			continue;
-		}
-		FA_Right(RIGHT_ANGLE);
-		compassRight();
-	}
-}
-
-//fill out the movement stack using the visit map to find out how to visit the destination square
-void moveToSquare(int destination) {
-	int moveThrough = distance[destination];
-	//knows how many squares it has to go to
-
-	int nextSquare = destination;
-
-	int i;
-	for (i = 0; i < moveThrough; i++) {
-		if (visit[nextSquare] != activeSquare->id) {
-			movement[movementCounter] = visit[nextSquare];
-			nextSquare = visit[nextSquare];
-
-			#ifdef STACK_OUTPUTS
-			FA_BTSendNumber(nextSquare);
-			FA_BTSendString(" is next square to move to\n", 30);
-			FA_BTSendNumber(movementCounter);
-			FA_BTSendString("\n", 5);
-			#endif
-
-			movementCounter++;
-		} else {
-			#ifdef STACK_OUTPUTS
-			FA_BTSendNumber(nextSquare);
-			FA_BTSendString(" is not being put on the stack\n", 35);
-			#endif
-		}
-	}
 }
 
 //discover thr maze using right hand side wall following
@@ -559,6 +370,251 @@ void printDistances(int n) {
 		FA_BTSendNumber(distance[i]);
 		FA_BTSendString("\n", 3);
 	}
+}
+
+/*
+This moves over the movement[] array whihc is being used as a stack, this array contains a list of squares to visit with closest square latest in the array
+so goes over the array with latest square first
+*/
+void moveOverStack(int dest) {
+	movementCounter--;
+	//need to take one away because it is incremented at the end before quitting the function
+	int moves = distance[dest];
+
+	#ifdef MOVING_BACK_OUTPUTS
+	FA_BTSendString("moves to take ", 20);
+	FA_BTSendNumber(moves);
+	FA_BTSendString(".\n", 6);
+	#endif
+
+	int i;
+	for (i = 0; i < moves; i++) {
+		#ifdef SQUARE_SEPERATOR
+		FA_BTSendString("\n\n\n\n", 10);
+		#endif
+
+		int squareId = movement[movementCounter];
+
+		#ifdef MOVING_BACK_OUTPUTS
+		FA_BTSendString("in square  ", 20);
+		FA_BTSendNumber(activeSquare->id);
+		FA_BTSendString(".\n", 6);
+		#endif
+
+		#ifdef MOVING_BACK_OUTPUTS
+		FA_BTSendString("want to go to square ", 25);
+		FA_BTSendNumber(squareId);
+		FA_BTSendString(".\n", 6);
+		#endif
+
+		#ifdef MOVING_BACK_OUTPUTS
+		FA_BTSendString("movementCounter = ", 25);
+		FA_BTSendNumber(movementCounter);
+		FA_BTSendString(".\n", 6);
+		#endif
+
+		square * north = activeSquare->north;
+		square * east = activeSquare->east;
+		square * south = activeSquare->south;
+		square * west = activeSquare->west;
+
+		if (north != NULL && (north->id == squareId || north->id == dest)) {
+			//move north and go forwards
+			#ifdef MOVING_BACK_OUTPUTS
+			FA_BTSendString("going north.\n", 20);
+			#endif
+
+			faceNorth();
+			moveUntillOverLine();
+
+		} else if (east != NULL && (east->id == squareId || east->id == dest)) {
+			#ifdef MOVING_BACK_OUTPUTS
+			FA_BTSendString("going east.\n", 20);
+			#endif
+
+			faceEast();
+			moveUntillOverLine();
+
+		} else if (south != NULL && (south->id == squareId || south->id == dest)) {
+			#ifdef MOVING_BACK_OUTPUTS
+			FA_BTSendString("going south.\n", 20);
+			#endif
+
+			faceSouth();
+			moveUntillOverLine();
+
+		} else if (west != NULL && (west->id == squareId || west->id == dest)) {
+			#ifdef MOVING_BACK_OUTPUTS
+			FA_BTSendString("going west.\n", 20);
+			#endif
+			faceWest();
+			moveUntillOverLine();
+
+		} else {
+			while (1) {
+				FA_BTSendNumber(squareId);
+				FA_BTSendString(" move over stack failed.\n", 30);
+				FA_DelaySecs(2);
+			}
+		}
+		movementCounter--;
+	}
+}
+
+//fill out the movement stack using the visit map to find out how to visit the destination square
+void moveToSquare(int destination) {
+	int moveThrough = distance[destination];
+	//knows how many squares it has to go to
+
+	int nextSquare = destination;
+
+	int i;
+	for (i = 0; i < moveThrough; i++) {
+		if (visit[nextSquare] != activeSquare->id) {
+			movement[movementCounter] = visit[nextSquare];
+			nextSquare = visit[nextSquare];
+
+			#ifdef STACK_OUTPUTS
+			FA_BTSendNumber(nextSquare);
+			FA_BTSendString(" is next square to move to\n", 30);
+			FA_BTSendNumber(movementCounter);
+			FA_BTSendString("\n", 5);
+			#endif
+
+			movementCounter++;
+		} else {
+			#ifdef STACK_OUTPUTS
+			FA_BTSendNumber(nextSquare);
+			FA_BTSendString(" is not being put on the stack\n", 35);
+			#endif
+		}
+	}
+}
+
+/*
+move the robot to face the north side
+*/
+void faceNorth(void) {
+	while (1) {
+		if (compass == 0) return;
+		if (compass == 90) {
+			FA_Left(90);
+			compassLeft();
+			continue;
+		}
+		FA_Right(RIGHT_ANGLE);
+		compassRight();
+	}
+}
+
+/*
+move the robot to face the east side
+*/
+void faceEast(void) {
+	while (1) {
+		if (compass == 90) return;
+		if (compass == 180) {
+			FA_Left(90);
+			compassLeft();
+			continue;
+		}
+		FA_Right(RIGHT_ANGLE);
+		compassRight();
+	}
+}
+
+
+/*
+move the robot to face the west side
+*/
+void faceWest(void) {
+	while (1) {
+		if (compass == 270) return;
+		if (compass == 0) {
+			FA_Left(90);
+			compassLeft();
+			continue;
+		}
+		FA_Right(RIGHT_ANGLE);
+		compassRight();
+	}
+}
+
+/*
+move the robot to face the south side
+*/
+void faceSouth(void) {
+	while (1) {
+		if (compass == 180) return;
+		if (compass == 270){
+			FA_Left(90);
+			compassLeft();
+			continue;
+		}
+		FA_Right(RIGHT_ANGLE);
+		compassRight();
+	}
+}
+
+//change the compass 90 degrees to the left
+void compassLeft(void) {
+
+	#ifdef COMPASS_OUTPUTS
+	FA_BTSendString("compass was ", 20);
+	FA_BTSendNumber(compass);
+	FA_BTSendString("\n", 5);
+	#endif
+
+	if (compass == 0) {
+		compass = 270;
+	} else {
+		compass -= 90;
+		compass %= 360;
+	}
+
+	#ifdef COMPASS_OUTPUTS
+	FA_BTSendString("compass now ", 20);
+	FA_BTSendNumber(compass);
+	FA_BTSendString("\n", 5);
+	#endif
+}
+
+//change the compass 90 degrees to the right
+void compassRight(void) {
+
+	#ifdef COMPASS_OUTPUTS
+	FA_BTSendString("compass was ", 20);
+	FA_BTSendNumber(compass);
+	FA_BTSendString("\n", 5);
+	#endif
+
+	compass += 90;
+	compass %= 360;
+
+	#ifdef COMPASS_OUTPUTS
+	FA_BTSendString("compass now ", 20);
+	FA_BTSendNumber(compass);
+	FA_BTSendString("\n", 5);
+	#endif
+}
+
+//move the compass 180 degrees
+void compass180(void) {
+
+	#ifdef COMPASS_OUTPUTS
+	FA_BTSendString("compass was ", 20);
+	FA_BTSendNumber(compass);
+	FA_BTSendString("\n", 5);
+	#endif
+
+	compass += 180;
+	compass %= 360;
+
+	#ifdef COMPASS_OUTPUTS
+	FA_BTSendString("compass now ", 20);
+	FA_BTSendNumber(compass);
+	FA_BTSendString("\n", 5);
+	#endif
 }
 
 //move the robot forwards untill it crosses a line
@@ -937,67 +993,6 @@ void moveUntillOverLine(void) {
 	}
 
 	FA_DelayMillis(300);
-}
-
-//change the compass 90 degrees to the left
-void compassLeft(void) {
-
-	#ifdef COMPASS_OUTPUTS
-	FA_BTSendString("compass was ", 20);
-	FA_BTSendNumber(compass);
-	FA_BTSendString("\n", 5);
-	#endif
-
-	if (compass == 0) {
-		compass = 270;
-	} else {
-		compass -= 90;
-		compass %= 360;
-	}
-
-	#ifdef COMPASS_OUTPUTS
-	FA_BTSendString("compass now ", 20);
-	FA_BTSendNumber(compass);
-	FA_BTSendString("\n", 5);
-	#endif
-}
-
-//change the compass 90 degrees to the right
-void compassRight(void) {
-
-	#ifdef COMPASS_OUTPUTS
-	FA_BTSendString("compass was ", 20);
-	FA_BTSendNumber(compass);
-	FA_BTSendString("\n", 5);
-	#endif
-
-	compass += 90;
-	compass %= 360;
-
-	#ifdef COMPASS_OUTPUTS
-	FA_BTSendString("compass now ", 20);
-	FA_BTSendNumber(compass);
-	FA_BTSendString("\n", 5);
-	#endif
-}
-
-//move the compass 180 degrees
-void compass180(void) {
-
-	#ifdef COMPASS_OUTPUTS
-	FA_BTSendString("compass was ", 20);
-	FA_BTSendNumber(compass);
-	FA_BTSendString("\n", 5);
-	#endif
-
-	compass += 180;
-	compass %= 360;
-
-	#ifdef COMPASS_OUTPUTS
-	FA_BTSendString("compass now ", 20);
-	FA_BTSendNumber(compass);
-	FA_BTSendString("\n", 5);
-	#endif
 }
 
 //malloc out a new square struct and return a pointer to it
